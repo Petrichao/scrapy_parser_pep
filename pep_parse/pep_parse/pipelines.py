@@ -1,32 +1,31 @@
-import csv
 from collections import defaultdict
-from datetime import datetime as dt
-from pathlib import Path
+import csv
+from datetime import datetime
 
-BASE_DIR = Path(__file__).parent.parent / 'results'
-RESULT_DIR = 'results'
-TIME_FORMAT = '%Y-%m-%d_%H-%M-%S'
-FILE_NAME = 'status_summary_{}.csv'
+from .settings import BASE_DIR
 
 
 class PepParsePipeline:
 
-    def __init__(self) -> None:
-        self.results_dir = BASE_DIR
-        self.results_dir.mkdir(exist_ok=True)
-        self.count_status = defaultdict(int)
-
     def open_spider(self, spider):
-        time = dt.now().strftime(TIME_FORMAT)
-        file_path = self.results_dir / FILE_NAME.format(time)
-        self.file = csv.writer(open(file_path, 'w'))
-        self.file.writerow(['Статус', 'Количество'])
+        self.status_count = defaultdict(int)
 
     def process_item(self, item, spider):
-        self.count_status[item['status']] += 1
-        print(self.count_status)
+        self.status_count[item['status']] += 1
         return item
 
     def close_spider(self, spider):
-        self.count_status['Total'] = sum(self.count_status.values())
-        self.file.writerows(self.count_status.items())
+        date = datetime.strftime(datetime.now(), '%Y-%m-%d_%H-%M-%S')
+        file = BASE_DIR / f'status_summary_{date}.csv'
+        with open(file, 'w', encoding='utf-8', newline='') as csv_file:
+            csv.writer(
+                csv_file,
+                dialect=csv.excel,
+                quoting=csv.QUOTE_NONE
+            ).writerows(
+                (
+                    ('Status', 'Quantity'),
+                    *self.status_count.items(),
+                    ('Total', sum(self.status_count.values()))
+                )
+            )
