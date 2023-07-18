@@ -17,8 +17,10 @@ class PepSpider(scrapy.Spider):
     def parse_pep(self, response):
         title = response.css('h1.page-title::text').get().replace('"', '')
         number, name = re.search(NUM_NAM, title).groups()
-        status = response.css(
-            '#pep-content > dl > dd:nth-child(6) > abbr::text').get()
+        status = response.xpath(
+            "//*[contains(text(), 'Status')]/following-sibling::dd[1]"
+        )
+        status = status.css('abbr::text').get()
         data = {
             'number': number,
             'name': name,
